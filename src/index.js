@@ -13,7 +13,7 @@ function eval(operands, operation) {
     // Do not use eval!!!
     let a = Number.parseFloat(operands[0].split(' ').join('')), 
         b = Number.parseFloat(operands[1].split(' ').join(''));
-    console.log(a, b);
+
     if (operation == OPERATIONS.ADDITION) {
         return a + b;
     } else if (operation == OPERATIONS.SUBTRACTION) {
@@ -33,28 +33,32 @@ function eval(operands, operation) {
 function expressionCalculator(expr) {
     // write your solution here
     expr = expr.split(' ').join('');
-    console.log(expr);
+    // console.log("Main expr: ", expr);
+
+    let operations = Object.values(OPERATIONS),
+        operation__ = [OPERATIONS.DIVISION, OPERATIONS.MULTIPLICATION];
 
     let get_operands = (expr, operation_index) => {
-        let previous_operand = [], next_operand = [],
-            operations = Object.values(OPERATIONS);
+        let previous_operand = [], next_operand = [];
+
+        // Find next operand
         for (let i = operation_index+1; i < expr.length; i++) {
             let ch = expr.charAt(i);
-            if (i === operation_index+1 && ch === OPERATIONS.SUBTRACTION) {
-                next_operand.push(ch);
-            } else if (operations.includes(ch)) {
+            if (operations.includes(ch)) {
+                if (i === operation_index+1 && ch === OPERATIONS.SUBTRACTION) {
+                    next_operand.push(ch);
+                    continue;
+                }
                 break;
             } else {
                 next_operand.push(ch);
             }
         }
 
+        // Find previous operand
         for (let i = operation_index-1; i >= 0; i--) {
             let ch = expr.charAt(i);
             if (operations.includes(ch)) {
-                if (ch == OPERATIONS.SUBTRACTION) {
-                    previous_operand.unshift(OPERATIONS.SUBTRACTION);
-                }
                 break;
             } else {
                 previous_operand.unshift(ch);
@@ -64,6 +68,7 @@ function expressionCalculator(expr) {
         return [previous_operand.join(''), next_operand.join('')];
     };
 
+    // Split into several expressions by brackets
     while (expr.indexOf(BRACKETS.OPEN) >= 0 || expr.indexOf(BRACKETS.CLOSE) >= 0 ) {
         let inner_expr = '', paired = 0;
         for (let i = expr.indexOf(BRACKETS.OPEN); i < expr.length; i++) {
@@ -77,46 +82,62 @@ function expressionCalculator(expr) {
                     inner_expr_result = expressionCalculator(inner_expr.substring(1, inner_expr.length - 1));
                     expr = expr.replace(inner_expr, inner_expr_result);
                     if (inner_expr_result < 0) {
-                        expr = expr.replace('+-', '-');
-                        expr = expr.replace('--', '+');
+                        expr = expr.replace(/\+-/g, '-');
+                        expr = expr.replace(/--/g, '+');
                     }
                     break;
                 };
             }
         }
 
+        // If brackets not paired return exception
         if (paired != 0) {
             throw Error("ExpressionError: Brackets must be paired");
         }
-        console.log("--Expr: ", expr);
+        // console.log("-- Part expr: ", expr);
     }
     
 
-    [OPERATIONS.DIVISION, OPERATIONS.MULTIPLICATION, OPERATIONS.SUBTRACTION, OPERATIONS.ADDITION].forEach(operation => {
-        while (expr.indexOf(operation, 1) > 0) {
+    operation__.forEach(operation => {
+        while (expr.indexOf(operation) > 0) {
 
-            let operation_index = expr.indexOf(operation, 1);
-            console.log("Operation index:", operation_index);
+            let operation_index = expr.indexOf(operation);
+            // console.log("Operation index:", operation_index);
     
             let operands = get_operands(expr, operation_index);
-            console.log("Operands: ", operands);
+            // console.log("Operands: ", operands);
     
-            let regex = operands.join(expr.charAt(operation_index));
+            let regex = operands.join(operation);
             let operation_result = eval(operands, operation);
-            console.log("Operation result: ", operation_result);
+            // console.log("Operation result: ", operation_result);
+            // console.log("** Regex: ", regex);
+
 
             expr = expr.replace(regex, operation_result);
             if (operation_result < 0) {
-                expr = expr.replace('+-', '-');
-                expr = expr.replace('--', '+');
+                expr = expr.replace(/\+-/g, '-');
+                expr = expr.replace(/--/g, '+');
             }
-    
-            // console.log(regex);
-            console.log("**Expr: ", expr);
+            // console.log("** Expr: ", expr);
         }
     });
     
-    return Number(expr);
+    let result = 0, operand = '';
+    for (let i = 0; i < expr.length; i++) {
+        let ch = expr.charAt(i);
+        if (operations.includes(ch) && i > 0) {
+            // console.log("--- Operand: ", operand);
+            result += Number.parseFloat(operand);
+            operand = ch;
+        } else {
+            operand += ch;
+        }
+    };
+
+
+    result += Number.parseFloat(operand);
+    // console.log("**Result: ", result);
+    return Number(result);
 }
 
 module.exports = {
